@@ -4,11 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"greenlight.luismatosgarcia.dev/internal/data"
 	"greenlight.luismatosgarcia.dev/internal/jsonlog"
-	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -30,6 +27,14 @@ type config struct {
 		maxOpenConns int
 		maxIdleConns int
 		maxIdleTime  string
+	}
+
+	// Add a new limiter struct containing fields for the request-per-second and burst values, and a boolean field
+	// which we can use to enable/disable rate limiting altogether.
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
 	}
 }
 
@@ -61,6 +66,12 @@ func main() {
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
 
+	// Create command line flags to read the setting values into the config struct. Notice that we use a true as
+	// the default for the 'enabled' setting.
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
 	flag.Parse()
 
 	// Initialize a new jsonlog.Logger which writes any messages *at or above* the INFO severity level to the
@@ -89,24 +100,11 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	// Declare an HTTP server with some sensible timeout settings, which listens on the port provided
-	// in the config struct and uses the servermux we created above as the handler.
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		ErrorLog:     log.New(logger, "", 0),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+	// Call app.serve() to start the server.
+	err = app.serve()
+	if err != nil {
+		logger.PrintFatal(err, nil)
 	}
-
-	// Start the HTTP server.
-	logger.PrintInfo("starting server", map[string]string{
-		"addr": srv.Addr,
-		"env":  cfg.env,
-	})
-	err = srv.ListenAndServe()
-	logger.PrintFatal(err, nil)
 }
 
 // The openDB() function returns a sql.DB connection pool.
