@@ -2,11 +2,11 @@ package data
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base32"
 	"greenlight.luismatosgarcia.dev/internal/validator"
-	"math/rand"
 	"time"
 )
 
