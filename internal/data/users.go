@@ -15,6 +15,9 @@ var (
 	ErrDuplicateEmail = errors.New("duplicate email")
 )
 
+// AnonymousUser - Declare a new AnonymousUser variable.
+var AnonymousUser = &User{}
+
 // User - Define a User struct to represent an individual user. Importantly, notice how we are using the json:"-" struct
 // tag to prevent the Password and Version fields appearing in any output when we encode it to JSON. Also notice
 // that the Password field uses the custom password type defined below.
@@ -252,4 +255,9 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 
 	// Return the matching user.
 	return &user, nil
+}
+
+// IsAnonymous - Check if a User instance is the AnonymousUser.
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
