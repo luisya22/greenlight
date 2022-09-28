@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
 	"greenlight.luismatosgarcia.dev/internal/data"
 	"greenlight.luismatosgarcia.dev/internal/jsonlog"
 	"greenlight.luismatosgarcia.dev/internal/mailer"
@@ -77,7 +78,7 @@ func main() {
 
 	// Read the DSN value from the db-dsn command-line flag into the config struct. We default to using our
 	// development DSN if no flag is provided.
-	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL DSN")
 
 	// Read the connection pool settings from command-line flags into the config struct.
 	// Notice the default values that we're using?
@@ -108,7 +109,16 @@ func main() {
 		return nil
 	})
 
+	// Create a new version boolean flag with the default value of false
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	// If the version flag value is true, then print out the version number and immediately exit.
+	if *displayVersion {
+		fmt.Printf("Version\t%s\n", version)
+		os.Exit(0)
+	}
 
 	// Initialize a new jsonlog.Logger which writes any messages *at or above* the INFO severity level to the
 	// standard out stream.
