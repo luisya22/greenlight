@@ -9,6 +9,7 @@ import (
 	"greenlight.luismatosgarcia.dev/internal/data"
 	"greenlight.luismatosgarcia.dev/internal/jsonlog"
 	"greenlight.luismatosgarcia.dev/internal/mailer"
+	"greenlight.luismatosgarcia.dev/internal/vcs"
 	"os"
 	"runtime"
 	"strings"
@@ -18,8 +19,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// Declare a string containing the application version number.
-const version = "1.0.0"
+// Make version a variable (rather than a constant) and set its value to vcs.Version().
+var (
+	version = vcs.Version()
+)
 
 // Define a config struct to hold all the configuration settings for our application. For now, the only
 // configuration settings will be the network port that we want the server to listen on, and the name of the current
